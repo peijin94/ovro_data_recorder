@@ -8,7 +8,10 @@ import logging
 from astropy import time
 from mnc.common import FS, CLOCK, NCHAN, CHAN_BW
 from dsautils import dsa_store
-from observing import obsstate
+try:
+    from observing import obsstate
+except ImportError:
+    obsstate = None
 
 __all__ = ['create_hdf5', 'set_frequencies', 'set_time',
            'set_polarization_products']
@@ -92,13 +95,14 @@ def create_hdf5(filename, beam, overwrite=False):
     ## Best effort only: a failure must never prevent recording.
     settings_file = ''
     settings_time_loaded = -1.0
-    try:
-        latest_setting = obsstate.read_latest_setting()
-        if latest_setting:
-            settings_file = latest_setting.get('filename', '') or ''
-            settings_time_loaded = float(latest_setting.get('time_loaded', -1.0))
-    except Exception as e:
-        lwahdf_logger.warning(f"Could not read latest array settings state: {str(e)}")
+    if obsstate is not None:
+        try:
+            latest_setting = obsstate.read_latest_setting()
+            if latest_setting:
+                settings_file = latest_setting.get('filename', '') or ''
+                settings_time_loaded = float(latest_setting.get('time_loaded', -1.0))
+        except Exception as e:
+            lwahdf_logger.warning(f"Could not read latest array settings state: {str(e)}")
     f.attrs['SettingsFile'] = settings_file
     f.attrs['SettingsTimeLoaded'] = settings_time_loaded
     
